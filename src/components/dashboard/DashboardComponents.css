@@ -1,0 +1,343 @@
+.admin-dashboard,
+.trainee-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.overview-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  background-color: var(--bg-primary);
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: var(--transition);
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon {
+  font-size: 48px;
+  flex-shrink: 0;
+}
+
+.stat-content h3 {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.quick-actions {
+  background-color: var(--bg-primary);
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.quick-actions h2 {
+  font-size: 22px;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.action-btn.primary {
+  background-color: var(--orange-primary);
+  color: white;
+}
+
+.action-btn.primary:hover {
+  background-color: var(--orange-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.recent-activity {
+  background-color: var(--bg-primary);
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.recent-activity h2 {
+  font-size: 22px;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.activity-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-content p {
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  font-size: 16px;
+}
+
+.activity-time {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.progress-tracker {
+  background-color: var(--bg-primary);
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.progress-tracker h2 {
+  font-size: 22px;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+.progress-card {
+  padding: 20px;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.progress-percentage {
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--orange-primary);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background-color: var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.progress-stats {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.upcoming-sessions {
+  background-color: var(--bg-primary);
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.upcoming-sessions h2 {
+  font-size: 22px;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+.session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  transition: var(--transition);
+}
+
+.session-item:hover {
+  transform: translateX(4px);
+}
+
+.session-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+  min-width: 60px;
+}
+
+.session-day {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--orange-primary);
+}
+
+.session-month {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.session-details {
+  flex: 1;
+}
+
+.session-details h3 {
+  font-size: 18px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.session-details p {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.session-status {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.assessment-summary {
+  background-color: var(--bg-primary);
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.assessment-summary h2 {
+  font-size: 22px;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+.assessment-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.assessment-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.assessment-icon {
+  font-size: 36px;
+  flex-shrink: 0;
+}
+
+.assessment-card h3 {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.assessment-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .overview-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+
+  .stat-card {
+    padding: 20px;
+  }
+
+  .stat-icon {
+    font-size: 36px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
+
+  .session-item {
+    flex-wrap: wrap;
+  }
+
+  .assessment-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
