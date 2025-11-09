@@ -7,6 +7,7 @@ import {
 } from 'firebase/auth'
 import { auth, db, authPersistenceReady } from '../firebase/config'
 import { doc, getDoc, setDoc, serverTimestamp, enableNetwork } from 'firebase/firestore'
+import { getFirebaseErrorMessage } from '../utils/validation'
 
 const AuthContext = createContext()
 
@@ -218,7 +219,7 @@ export function AuthProvider({ children }) {
       setLoading(false)
       return { 
         success: false, 
-        error: error.message || 'Invalid credentials' 
+        error: getFirebaseErrorMessage(error)
       }
     }
   }
@@ -245,7 +246,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       return { 
         success: false, 
-        error: error.message || 'Signup failed' 
+        error: getFirebaseErrorMessage(error)
       }
     }
   }

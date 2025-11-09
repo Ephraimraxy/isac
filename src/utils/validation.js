@@ -161,3 +161,65 @@ export const validateModule = (moduleData) => {
   }
 }
 
+/**
+ * Converts Firebase authentication error codes to user-friendly messages
+ * @param {Error|string} error - Firebase error object or error message string
+ * @returns {string} - User-friendly error message
+ */
+export const getFirebaseErrorMessage = (error) => {
+  // If error is already a string, check if it contains Firebase error codes
+  const errorMessage = typeof error === 'string' ? error : error?.message || error?.code || ''
+  
+  // Firebase Auth error code mappings
+  const errorMappings = {
+    'auth/invalid-credential': 'Invalid email or password. Please check your credentials and try again.',
+    'auth/wrong-password': 'Incorrect password. Please try again.',
+    'auth/user-not-found': 'No account found with this email address. Please sign up first.',
+    'auth/user-disabled': 'This account has been disabled. Please contact support.',
+    'auth/email-already-in-use': 'An account with this email already exists. Please use a different email or try logging in.',
+    'auth/weak-password': 'Password is too weak. Please use a stronger password (at least 6 characters).',
+    'auth/invalid-email': 'Invalid email address. Please enter a valid email.',
+    'auth/operation-not-allowed': 'This operation is not allowed. Please contact support.',
+    'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Please check your internet connection and try again.',
+    'auth/popup-closed-by-user': 'Sign-in popup was closed. Please try again.',
+    'auth/cancelled-popup-request': 'Sign-in was cancelled. Please try again.',
+    'auth/popup-blocked': 'Popup was blocked by your browser. Please allow popups and try again.',
+    'auth/account-exists-with-different-credential': 'An account already exists with the same email but different sign-in method.',
+    'auth/requires-recent-login': 'This operation requires recent authentication. Please log out and log back in.',
+    'auth/invalid-verification-code': 'Invalid verification code. Please try again.',
+    'auth/invalid-verification-id': 'Invalid verification ID. Please try again.',
+    'auth/missing-verification-code': 'Verification code is missing. Please try again.',
+    'auth/missing-verification-id': 'Verification ID is missing. Please try again.',
+    'auth/code-expired': 'Verification code has expired. Please request a new one.',
+  }
+
+  // Check for exact error code matches
+  for (const [code, message] of Object.entries(errorMappings)) {
+    if (errorMessage.includes(code)) {
+      return message
+    }
+  }
+
+  // Check for error code in format "Firebase: Error (auth/xxx)"
+  const codeMatch = errorMessage.match(/auth\/[\w-]+/)
+  if (codeMatch) {
+    const code = codeMatch[0]
+    if (errorMappings[code]) {
+      return errorMappings[code]
+    }
+  }
+
+  // If no specific mapping found, return a generic message
+  if (errorMessage.toLowerCase().includes('firebase')) {
+    return 'An authentication error occurred. Please try again or contact support if the problem persists.'
+  }
+
+  // Return the original error message if it's user-friendly, otherwise return generic message
+  if (errorMessage && !errorMessage.includes('Firebase:') && !errorMessage.includes('auth/')) {
+    return errorMessage
+  }
+
+  return 'An unexpected error occurred. Please try again.'
+}
+
