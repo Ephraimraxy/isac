@@ -93,7 +93,13 @@ export default function Login() {
           </div>
         </div>
 
-        <form onSubmit={step === 1 ? handleEmailNext : handleSubmit}>
+        <form onSubmit={(e) => {
+          if (step === 1) {
+            handleEmailNext(e)
+          } else {
+            handleSubmit(e)
+          }
+        }}>
           <div className={`form-step ${step === 1 ? 'active' : step === 2 ? 'previous' : ''}`}>
             <div className="form-group">
               <label htmlFor="email">Email Address</label>
