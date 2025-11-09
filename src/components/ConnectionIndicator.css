@@ -1,0 +1,70 @@
+.connection-indicator {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-secondary, #ffffff);
+  border: 2px solid;
+  border-radius: 8px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  animation: slideUp 0.3s ease-out;
+  max-width: 90%;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateX(-50%) translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+.connection-indicator.offline {
+  border-color: #f44336;
+  background: #fee;
+  color: #c62828;
+}
+
+.connection-indicator.slow {
+  border-color: #ff9800;
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.connection-indicator.good {
+  border-color: #4caf50;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.connection-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.connection-text {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .connection-indicator {
+    bottom: 10px;
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+  
+  .connection-text {
+    font-size: 12px;
+  }
+}
+
