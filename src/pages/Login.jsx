@@ -106,12 +106,13 @@ export default function Login() {
               <input
                 type="email"
                 id="email"
+                name="email"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value)
                   setError('')
                 }}
-                required
+                required={step === 1}
                 placeholder="Enter your email"
                 disabled={loading || step === 2}
                 autoFocus={step === 1}
@@ -132,12 +133,13 @@ export default function Login() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
+                  name="password"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value)
                     setError('')
                   }}
-                  required
+                  required={step === 2}
                   placeholder="Enter your password"
                   disabled={loading}
                   autoFocus={step === 2}
