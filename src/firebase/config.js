@@ -2,7 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, setPersistence, inMemoryPersistence, signOut } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, disableNetwork, enableNetwork } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
@@ -36,8 +36,38 @@ const authPersistenceReady = setPersistence(auth, inMemoryPersistence)
     console.warn('Failed to configure Firebase auth persistence:', error);
   });
 
+// Initialize Firestore with optimized settings
 const db = getFirestore(app);
+
+// Connection state management
+let isOnline = navigator.onLine;
+let networkListeners = [];
+
+const handleOnline = () => {
+  isOnline = true;
+  enableNetwork(db).catch(() => {
+    // Silently handle - network will retry automatically
+  });
+};
+
+const handleOffline = () => {
+  isOnline = false;
+  disableNetwork(db).catch(() => {
+    // Silently handle
+  });
+};
+
+// Set up network listeners
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', handleOnline);
+  window.addEventListener('offline', handleOffline);
+  networkListeners = [
+    () => window.removeEventListener('online', handleOnline),
+    () => window.removeEventListener('offline', handleOffline)
+  ];
+}
+
 const storage = getStorage(app);
 
-export { app, analytics, auth, db, storage, authPersistenceReady };
+export { app, analytics, auth, db, storage, authPersistenceReady, isOnline };
 

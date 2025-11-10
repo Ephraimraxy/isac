@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -6,6 +6,7 @@ import { ErrorProvider } from './contexts/ErrorContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import LoadingSpinner from './components/LoadingSpinner'
 import ConnectionIndicator from './components/ConnectionIndicator'
+import { cleanupAllListeners } from './services/firestore'
 
 // Lazy load components for code splitting
 const SplashScreen = lazy(() => import('./components/SplashScreen'))
@@ -62,6 +63,13 @@ function AppRoutes() {
 }
 
 function App() {
+  // Cleanup all Firestore listeners on app unmount
+  useEffect(() => {
+    return () => {
+      cleanupAllListeners()
+    }
+  }, [])
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
