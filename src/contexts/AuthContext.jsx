@@ -117,13 +117,35 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let unsubscribe = () => {}
+    let isMounted = true
 
     const handleAuthChange = async (firebaseUser) => {
+      if (!isMounted) return
+      
       if (firebaseUser) {
+        // Set basic user immediately from auth (fast)
+        const isAdmin = firebaseUser.email === ADMIN_EMAIL
+        const basicUserData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          role: isAdmin ? 'admin' : 'trainee',
+          name: isAdmin ? 'Admin' : (firebaseUser.email?.split('@')[0] || 'User')
+        }
+        
+        // Set user immediately for fast loading
+        setUser(prevUser => {
+          if (prevUser && prevUser.uid === basicUserData.uid) {
+            return prevUser
+          }
+          return basicUserData
+        })
+        setLoading(false) // Stop loading immediately
+        
+        // Then fetch full user data from Firestore in background
         try {
-          // Only update if user state is not already set (to avoid overwriting login state)
-          // This prevents race conditions where login sets user state and then onAuthStateChanged overwrites it
-          const userDoc = await getUserDocument(firebaseUser.uid)
+          const userDoc = await getUserDocument(firebaseUser.uid, 1, 2000)
+          
+          if (!isMounted) return
           
           if (userDoc.exists()) {
             const userData = { 
@@ -131,64 +153,44 @@ export function AuthProvider({ children }) {
               email: firebaseUser.email,
               ...userDoc.data() 
             }
-            // Only update if user state is different or not set
             setUser(prevUser => {
               if (prevUser && prevUser.uid === userData.uid) {
-                return prevUser // Keep existing state if it's the same user
+                return userData // Update with full data
               }
               return userData
             })
           } else {
-            // Create user document if it doesn't exist (only for trainees)
-            const isAdmin = firebaseUser.email === ADMIN_EMAIL
+            // Create user document if it doesn't exist
             const newUser = {
               email: firebaseUser.email,
               role: isAdmin ? 'admin' : 'trainee',
               name: isAdmin ? 'Admin' : (firebaseUser.email?.split('@')[0] || 'User'),
               createdAt: serverTimestamp()
             }
-            await setUserDocument(firebaseUser.uid, newUser)
-            const userData = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              role: isAdmin ? 'admin' : 'trainee',
-              name: isAdmin ? 'Admin' : (firebaseUser.email?.split('@')[0] || 'User'),
-              createdAt: new Date()
-            }
-            setUser(prevUser => {
-              if (prevUser && prevUser.uid === userData.uid) {
-                return prevUser
-              }
-              return userData
-            })
+            // Try to create, but don't wait if it fails
+            setUserDocument(firebaseUser.uid, newUser, 1, 2000).catch(() => {})
           }
         } catch (error) {
-          // Only log non-timeout errors in dev mode
+          // Silently fail - we already have basic user data
           if (import.meta.env.DEV && !error.message?.includes('timeout')) {
             console.warn('Error fetching user document:', error.message || error.code)
           }
-          // If Firestore is offline or there's an error, set user with basic info from auth
-          // This allows the app to continue functioning even if Firestore is unavailable
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            role: firebaseUser.email === ADMIN_EMAIL ? 'admin' : 'trainee',
-            name: firebaseUser.email?.split('@')[0] || 'User'
-          })
         }
       } else {
         setUser(null)
+        setLoading(false)
       }
-      setLoading(false)
     }
 
-    authPersistenceReady
-      .catch(() => {})
-      .finally(() => {
-        unsubscribe = onAuthStateChanged(auth, handleAuthChange)
-      })
+    // Start auth state listener immediately - don't wait for persistence
+    // This makes auth loading much faster
+    unsubscribe = onAuthStateChanged(auth, handleAuthChange)
+    
+    // Handle persistence in background (non-blocking)
+    authPersistenceReady.catch(() => {})
 
     return () => {
+      isMounted = false
       unsubscribe()
     }
   }, [])

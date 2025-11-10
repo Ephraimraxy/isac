@@ -1,9 +1,11 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDashboardStats } from '../../hooks/useDashboardStats'
 import LoadingSpinner from '../LoadingSpinner'
 import './DashboardComponents.css'
 
 export default function AdminDashboard() {
+  const navigate = useNavigate()
   const { stats, recentActivity, loading } = useDashboardStats()
 
   const formatTimeAgo = (date) => {
@@ -51,13 +53,13 @@ export default function AdminDashboard() {
       <div className="quick-actions">
         <h2>Quick Actions</h2>
         <div className="action-buttons">
-          <button className="action-btn primary" onClick={() => window.location.href = '/modules'}>
+          <button className="action-btn primary" onClick={() => navigate('/modules')}>
             ➕ Add Module
           </button>
-          <button className="action-btn primary" onClick={() => window.location.href = '/messaging'}>
+          <button className="action-btn primary" onClick={() => navigate('/messaging')}>
             💬 Send Message
           </button>
-          <button className="action-btn primary" onClick={() => window.location.href = '/assessments'}>
+          <button className="action-btn primary" onClick={() => navigate('/assessments')}>
             📊 View Reports
           </button>
         </div>
