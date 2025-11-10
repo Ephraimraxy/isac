@@ -345,63 +345,7 @@ export const getDashboardStats = async () => {
   };
 };
 
-// Suppress Firestore console errors and OAuth warnings globally
-if (typeof window !== 'undefined') {
-  const originalConsoleError = console.error;
-  const originalConsoleWarn = console.warn;
-  const originalConsoleInfo = console.info;
-  
-  const suppressedPatterns = [
-    'WebChannelConnection',
-    'transport errored',
-    '400 (Bad Request)',
-    'RPC',
-    'Listen',
-    'Write',
-    'stream',
-    'transport',
-    'ERR_ABORTED',
-    'OAuth operations',
-    'not authorized for OAuth',
-    'Authorized domains',
-    'iframe.js',
-    'navigation:iframe.js',
-    'firestore.googleapis.com',
-    'Listen/channel',
-    'gsessionid',
-    'Bad Request',
-    'net::ERR_ABORTED'
-  ];
-  
-  const shouldSuppress = (message) => {
-    const msg = typeof message === 'string' ? message : String(message);
-    return suppressedPatterns.some(pattern => msg.includes(pattern));
-  };
-  
-  // Override console.error
-  console.error = (...args) => {
-    const message = args.join(' ');
-    if (!shouldSuppress(message)) {
-      originalConsoleError.apply(console, args);
-    }
-  };
-  
-  // Override console.warn for Firestore warnings and OAuth
-  console.warn = (...args) => {
-    const message = args.join(' ');
-    if (!shouldSuppress(message)) {
-      originalConsoleWarn.apply(console, args);
-    }
-  };
-  
-  // Override console.info for OAuth warnings
-  console.info = (...args) => {
-    const message = args.join(' ');
-    if (!shouldSuppress(message)) {
-      originalConsoleInfo.apply(console, args);
-    }
-  };
-}
+// Console suppression is now handled in main.jsx (runs earlier)
 
 // Helper to create safe listeners with error handling
 const createSafeListener = (listenerKey, query, callback, errorContext = '') => {
