@@ -163,7 +163,10 @@ export function AuthProvider({ children }) {
             })
           }
         } catch (error) {
-          console.error('Error fetching user document:', error)
+          // Only log non-timeout errors in dev mode
+          if (import.meta.env.DEV && !error.message?.includes('timeout')) {
+            console.warn('Error fetching user document:', error.message || error.code)
+          }
           // If Firestore is offline or there's an error, set user with basic info from auth
           // This allows the app to continue functioning even if Firestore is unavailable
           setUser({

@@ -256,12 +256,54 @@ export const getDashboardStats = async () => {
   };
 };
 
+// Suppress Firestore console errors globally (production only)
+if (typeof window !== 'undefined' && !import.meta.env.DEV) {
+  const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
+  
+  const suppressedPatterns = [
+    'WebChannelConnection',
+    'transport errored',
+    '400 (Bad Request)',
+    'RPC',
+    'Listen',
+    'Write',
+    'stream',
+    'transport'
+  ];
+  
+  const shouldSuppress = (message) => {
+    const msg = typeof message === 'string' ? message : String(message);
+    return suppressedPatterns.some(pattern => msg.includes(pattern));
+  };
+  
+  // Override console.error
+  console.error = (...args) => {
+    const message = args.join(' ');
+    if (!shouldSuppress(message)) {
+      originalConsoleError.apply(console, args);
+    }
+  };
+  
+  // Override console.warn for Firestore warnings
+  console.warn = (...args) => {
+    const message = args.join(' ');
+    if (!shouldSuppress(message)) {
+      originalConsoleWarn.apply(console, args);
+    }
+  };
+}
+
 // Helper to create safe listeners with error handling
 const createSafeListener = (listenerKey, query, callback, errorContext = '') => {
   // Clean up existing listener if any
   const existingUnsubscribe = activeListeners.get(listenerKey);
   if (existingUnsubscribe) {
-    existingUnsubscribe();
+    try {
+      existingUnsubscribe();
+    } catch (e) {
+      // Ignore cleanup errors
+    }
     activeListeners.delete(listenerKey);
   }
 
@@ -272,7 +314,7 @@ const createSafeListener = (listenerKey, query, callback, errorContext = '') => 
   }
 
   let errorCount = 0;
-  const maxErrors = 3;
+  const maxErrors = 2; // Reduced from 3 to fail faster
 
   const unsubscribe = onSnapshot(
     query,
@@ -286,29 +328,35 @@ const createSafeListener = (listenerKey, query, callback, errorContext = '') => 
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         callback(data);
       } catch (err) {
-        if (import.meta.env.DEV) {
-          console.warn(`Error processing snapshot for ${errorContext}:`, err);
-        }
+        // Silently handle processing errors
       }
     },
     (error) => {
       errorCount++;
       connectionState.lastError = error;
       
-      // Don't retry on 400 errors (bad request) - these are usually permission/index issues
-      if (error.code === 'permission-denied' || error.code === 'failed-precondition' || 
-          error.message?.includes('400') || error.message?.includes('Bad Request')) {
-        // Unsubscribe on permanent errors
-        if (errorCount >= maxErrors) {
+      // Immediately stop on 400 errors (bad request) - these are usually permission/index issues
+      const is400Error = error.code === 'permission-denied' || 
+                        error.code === 'failed-precondition' || 
+                        error.code === 'unavailable' ||
+                        error.message?.includes('400') || 
+                        error.message?.includes('Bad Request') ||
+                        error.message?.includes('transport errored');
+      
+      if (is400Error) {
+        // Immediately unsubscribe on 400 errors - don't retry
+        try {
           unsubscribe();
           activeListeners.delete(listenerKey);
+        } catch (e) {
+          // Ignore cleanup errors
         }
-        // Silently fail - don't spam console
+        // Completely silent - no logging
         return;
       }
       
-      // For network errors, only log in dev and let Firestore retry
-      if (import.meta.env.DEV && errorCount <= 1) {
+      // For other errors, only log once in dev mode
+      if (import.meta.env.DEV && errorCount === 1) {
         console.warn(`Firestore listener error (${errorContext}):`, error.code || error.message);
       }
       
@@ -320,7 +368,7 @@ const createSafeListener = (listenerKey, query, callback, errorContext = '') => 
         setTimeout(() => {
           connectionState.isOnline = navigator.onLine;
           enableNetwork(db).catch(() => {});
-        }, 5000);
+        }, 3000); // Reduced from 5s to 3s
       }
     }
   );
