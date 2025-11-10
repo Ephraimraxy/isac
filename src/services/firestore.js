@@ -392,6 +392,7 @@ export const subscribeToAttendance = (filters = {}, callback, limitCount = 100) 
   const listenerKey = `attendance-${JSON.stringify(filters)}-${limitCount}`;
   let q = query(collection(db, COLLECTIONS.ATTENDANCE));
   
+  // Apply filters
   if (filters.date) {
     q = query(q, where('date', '==', filters.date));
   }
@@ -402,9 +403,29 @@ export const subscribeToAttendance = (filters = {}, callback, limitCount = 100) 
     q = query(q, where('traineeId', '==', filters.traineeId));
   }
   
-  q = query(q, orderBy('date', 'desc'), limit(limitCount));
+  // Only add orderBy if no filters (to avoid index requirement)
+  // If filters exist, we'll sort in memory
+  const hasFilters = filters.date || filters.module || filters.traineeId;
+  if (!hasFilters) {
+    q = query(q, orderBy('date', 'desc'), limit(limitCount));
+  } else {
+    q = query(q, limit(limitCount * 2)); // Get more to sort in memory
+  }
   
-  return createSafeListener(listenerKey, q, callback, 'subscribeToAttendance');
+  const wrappedCallback = (data) => {
+    // Sort in memory if we have filters
+    if (hasFilters) {
+      data.sort((a, b) => {
+        const dateA = a.date || a.timestamp?.toDate?.() || new Date(0);
+        const dateB = b.date || b.timestamp?.toDate?.() || new Date(0);
+        return dateB - dateA;
+      });
+      data = data.slice(0, limitCount);
+    }
+    callback(data);
+  };
+  
+  return createSafeListener(listenerKey, q, wrappedCallback, 'subscribeToAttendance');
 };
 
 export const subscribeToMessages = (userId, callback, limitCount = 50) => {
