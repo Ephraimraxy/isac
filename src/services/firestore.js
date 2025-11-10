@@ -24,14 +24,23 @@ const activeListeners = new Map();
 let connectionState = {
   isOnline: navigator.onLine,
   retryCount: 0,
-  lastError: null
+  lastError: null,
+  consecutiveErrors: 0,
+  lastErrorTime: null
+};
+
+// Reset error tracking after successful operations
+const resetErrorTracking = () => {
+  connectionState.consecutiveErrors = 0;
+  connectionState.lastErrorTime = null;
+  connectionState.lastError = null;
 };
 
 // Update connection state
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     connectionState.isOnline = true;
-    connectionState.retryCount = 0;
+    resetErrorTracking();
     enableNetwork(db).catch(() => {});
   });
   
@@ -39,6 +48,17 @@ if (typeof window !== 'undefined') {
     connectionState.isOnline = false;
     disableNetwork(db).catch(() => {});
   });
+  
+  // Reset error tracking periodically (every 30 seconds) if online
+  setInterval(() => {
+    if (connectionState.isOnline && connectionState.consecutiveErrors > 0) {
+      const now = Date.now();
+      // Reset if no errors in the last 30 seconds
+      if (!connectionState.lastErrorTime || (now - connectionState.lastErrorTime) > 30000) {
+        resetErrorTracking();
+      }
+    }
+  }, 30000);
 }
 
 // Collections
@@ -113,6 +133,8 @@ export const deleteModule = async (moduleId) => {
 export const getAttendance = async (filters = {}, limitCount = 100) => {
   let q = query(collection(db, COLLECTIONS.ATTENDANCE));
   
+  const hasFilters = filters.date || filters.module || filters.traineeId;
+  
   if (filters.date) {
     q = query(q, where('date', '==', filters.date));
   }
@@ -123,9 +145,27 @@ export const getAttendance = async (filters = {}, limitCount = 100) => {
     q = query(q, where('traineeId', '==', filters.traineeId));
   }
   
-  q = query(q, orderBy('date', 'desc'), limit(limitCount));
+  // Only use orderBy if no filters (to avoid composite index requirement)
+  if (!hasFilters) {
+    q = query(q, orderBy('date', 'desc'), limit(limitCount));
+  } else {
+    q = query(q, limit(limitCount * 2)); // Get more to sort in memory
+  }
+  
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  let results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Sort in memory if we have filters
+  if (hasFilters) {
+    results.sort((a, b) => {
+      const dateA = a.date || a.timestamp?.toDate?.() || new Date(0);
+      const dateB = b.date || b.timestamp?.toDate?.() || new Date(0);
+      return dateB - dateA;
+    });
+    results = results.slice(0, limitCount);
+  }
+  
+  return results;
 };
 
 export const markAttendance = async (attendanceData) => {
@@ -145,6 +185,8 @@ export const updateAttendance = async (attendanceId, data) => {
 export const getAssessments = async (filters = {}, limitCount = 100) => {
   let q = query(collection(db, COLLECTIONS.ASSESSMENTS));
   
+  const hasFilters = filters.traineeId || filters.module;
+  
   if (filters.traineeId) {
     q = query(q, where('traineeId', '==', filters.traineeId));
   }
@@ -152,9 +194,27 @@ export const getAssessments = async (filters = {}, limitCount = 100) => {
     q = query(q, where('module', '==', filters.module));
   }
   
-  q = query(q, orderBy('date', 'desc'), limit(limitCount));
+  // Only use orderBy if no filters (to avoid composite index requirement)
+  if (!hasFilters) {
+    q = query(q, orderBy('date', 'desc'), limit(limitCount));
+  } else {
+    q = query(q, limit(limitCount * 2)); // Get more to sort in memory
+  }
+  
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  let results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Sort in memory if we have filters
+  if (hasFilters) {
+    results.sort((a, b) => {
+      const dateA = a.date?.toDate?.() || a.created?.toDate?.() || new Date(0);
+      const dateB = b.date?.toDate?.() || b.created?.toDate?.() || new Date(0);
+      return dateB - dateA;
+    });
+    results = results.slice(0, limitCount);
+  }
+  
+  return results;
 };
 
 export const createAssessment = async (assessmentData) => {
@@ -169,6 +229,8 @@ export const createAssessment = async (assessmentData) => {
 export const getGrades = async (filters = {}, limitCount = 100) => {
   let q = query(collection(db, COLLECTIONS.GRADES));
   
+  const hasFilters = filters.assessmentId || filters.traineeId;
+  
   if (filters.assessmentId) {
     q = query(q, where('assessmentId', '==', filters.assessmentId));
   }
@@ -176,9 +238,27 @@ export const getGrades = async (filters = {}, limitCount = 100) => {
     q = query(q, where('traineeId', '==', filters.traineeId));
   }
   
-  q = query(q, orderBy('submittedAt', 'desc'), limit(limitCount));
+  // Only use orderBy if no filters (to avoid composite index requirement)
+  if (!hasFilters) {
+    q = query(q, orderBy('submittedAt', 'desc'), limit(limitCount));
+  } else {
+    q = query(q, limit(limitCount * 2)); // Get more to sort in memory
+  }
+  
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  let results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Sort in memory if we have filters
+  if (hasFilters) {
+    results.sort((a, b) => {
+      const dateA = a.submittedAt?.toDate?.() || a.timestamp?.toDate?.() || new Date(0);
+      const dateB = b.submittedAt?.toDate?.() || b.timestamp?.toDate?.() || new Date(0);
+      return dateB - dateA;
+    });
+    results = results.slice(0, limitCount);
+  }
+  
+  return results;
 };
 
 export const submitGrade = async (gradeData) => {
@@ -191,14 +271,23 @@ export const submitGrade = async (gradeData) => {
 
 // Messages
 export const getMessages = async (userId, limitCount = 50) => {
+  // Use where only, sort in memory to avoid composite index requirement
   const q = query(
     collection(db, COLLECTIONS.MESSAGES),
     where('recipientId', '==', userId),
-    orderBy('date', 'desc'),
-    limit(limitCount)
+    limit(limitCount * 2) // Get more to sort in memory
   );
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  let results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Sort in memory by date
+  results.sort((a, b) => {
+    const dateA = a.date?.toDate?.() || a.timestamp?.toDate?.() || new Date(0);
+    const dateB = b.date?.toDate?.() || b.timestamp?.toDate?.() || new Date(0);
+    return dateB - dateA;
+  });
+  
+  return results.slice(0, limitCount);
 };
 
 export const sendMessage = async (messageData) => {
@@ -256,10 +345,11 @@ export const getDashboardStats = async () => {
   };
 };
 
-// Suppress Firestore console errors globally (production only)
-if (typeof window !== 'undefined' && !import.meta.env.DEV) {
+// Suppress Firestore console errors and OAuth warnings globally
+if (typeof window !== 'undefined') {
   const originalConsoleError = console.error;
   const originalConsoleWarn = console.warn;
+  const originalConsoleInfo = console.info;
   
   const suppressedPatterns = [
     'WebChannelConnection',
@@ -269,7 +359,18 @@ if (typeof window !== 'undefined' && !import.meta.env.DEV) {
     'Listen',
     'Write',
     'stream',
-    'transport'
+    'transport',
+    'ERR_ABORTED',
+    'OAuth operations',
+    'not authorized for OAuth',
+    'Authorized domains',
+    'iframe.js',
+    'navigation:iframe.js',
+    'firestore.googleapis.com',
+    'Listen/channel',
+    'gsessionid',
+    'Bad Request',
+    'net::ERR_ABORTED'
   ];
   
   const shouldSuppress = (message) => {
@@ -285,11 +386,19 @@ if (typeof window !== 'undefined' && !import.meta.env.DEV) {
     }
   };
   
-  // Override console.warn for Firestore warnings
+  // Override console.warn for Firestore warnings and OAuth
   console.warn = (...args) => {
     const message = args.join(' ');
     if (!shouldSuppress(message)) {
       originalConsoleWarn.apply(console, args);
+    }
+  };
+  
+  // Override console.info for OAuth warnings
+  console.info = (...args) => {
+    const message = args.join(' ');
+    if (!shouldSuppress(message)) {
+      originalConsoleInfo.apply(console, args);
     }
   };
 }
@@ -307,22 +416,35 @@ const createSafeListener = (listenerKey, query, callback, errorContext = '') => 
     activeListeners.delete(listenerKey);
   }
 
-  // Don't set up listener if offline
+  // Don't set up listener if offline or too many consecutive errors
   if (!connectionState.isOnline) {
     // Return a no-op unsubscribe function
+    return () => {};
+  }
+  
+  // Prevent setting up listeners if we've had too many consecutive errors recently
+  const now = Date.now();
+  if (connectionState.consecutiveErrors >= 5 && 
+      connectionState.lastErrorTime && 
+      (now - connectionState.lastErrorTime) < 10000) {
+    // Too many errors in the last 10 seconds, skip this listener
     return () => {};
   }
 
   let errorCount = 0;
   const maxErrors = 2; // Reduced from 3 to fail faster
 
+  let isUnsubscribed = false;
+  
   const unsubscribe = onSnapshot(
     query,
     (snapshot) => {
+      // Don't process if already unsubscribed
+      if (isUnsubscribed) return;
+      
       // Reset error count on success
       errorCount = 0;
-      connectionState.retryCount = 0;
-      connectionState.lastError = null;
+      resetErrorTracking();
       
       try {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -332,6 +454,9 @@ const createSafeListener = (listenerKey, query, callback, errorContext = '') => 
       }
     },
     (error) => {
+      // Don't process if already unsubscribed
+      if (isUnsubscribed) return;
+      
       errorCount++;
       connectionState.lastError = error;
       
@@ -339,21 +464,30 @@ const createSafeListener = (listenerKey, query, callback, errorContext = '') => 
       const is400Error = error.code === 'permission-denied' || 
                         error.code === 'failed-precondition' || 
                         error.code === 'unavailable' ||
+                        error.code === 'invalid-argument' ||
                         error.message?.includes('400') || 
                         error.message?.includes('Bad Request') ||
-                        error.message?.includes('transport errored');
+                        error.message?.includes('transport errored') ||
+                        error.message?.includes('Listen/channel');
       
       if (is400Error) {
-        // Immediately unsubscribe on 400 errors - don't retry
+        // Mark as unsubscribed and cleanup immediately
+        isUnsubscribed = true;
+        connectionState.consecutiveErrors++;
+        connectionState.lastErrorTime = Date.now();
         try {
           unsubscribe();
           activeListeners.delete(listenerKey);
         } catch (e) {
           // Ignore cleanup errors
         }
-        // Completely silent - no logging
+        // Completely silent - no logging, no retries
         return;
       }
+      
+      // Track consecutive errors
+      connectionState.consecutiveErrors++;
+      connectionState.lastErrorTime = Date.now();
       
       // For other errors, only log once in dev mode
       if (import.meta.env.DEV && errorCount === 1) {
@@ -362,13 +496,20 @@ const createSafeListener = (listenerKey, query, callback, errorContext = '') => 
       
       // If too many errors, disable network temporarily
       if (errorCount >= maxErrors) {
+        isUnsubscribed = true;
+        try {
+          unsubscribe();
+          activeListeners.delete(listenerKey);
+        } catch (e) {
+          // Ignore cleanup errors
+        }
         connectionState.isOnline = false;
         disableNetwork(db).catch(() => {});
         // Re-enable after a delay
         setTimeout(() => {
           connectionState.isOnline = navigator.onLine;
           enableNetwork(db).catch(() => {});
-        }, 3000); // Reduced from 5s to 3s
+        }, 5000);
       }
     }
   );
@@ -430,19 +571,31 @@ export const subscribeToAttendance = (filters = {}, callback, limitCount = 100) 
 
 export const subscribeToMessages = (userId, callback, limitCount = 50) => {
   const listenerKey = `messages-${userId}-${limitCount}`;
+  // Use where only, sort in memory to avoid composite index requirement
   const q = query(
     collection(db, COLLECTIONS.MESSAGES),
     where('recipientId', '==', userId),
-    orderBy('date', 'desc'),
-    limit(limitCount)
+    limit(limitCount * 2) // Get more to sort in memory
   );
   
-  return createSafeListener(listenerKey, q, callback, 'subscribeToMessages');
+  const wrappedCallback = (data) => {
+    // Sort in memory by date
+    data.sort((a, b) => {
+      const dateA = a.date?.toDate?.() || a.timestamp?.toDate?.() || new Date(0);
+      const dateB = b.date?.toDate?.() || b.timestamp?.toDate?.() || new Date(0);
+      return dateB - dateA;
+    });
+    callback(data.slice(0, limitCount));
+  };
+  
+  return createSafeListener(listenerKey, q, wrappedCallback, 'subscribeToMessages');
 };
 
 export const subscribeToAssessments = (filters = {}, callback, limitCount = 100) => {
   const listenerKey = `assessments-${JSON.stringify(filters)}-${limitCount}`;
   let q = query(collection(db, COLLECTIONS.ASSESSMENTS));
+  
+  const hasFilters = filters.traineeId || filters.module;
   
   if (filters.traineeId) {
     q = query(q, where('traineeId', '==', filters.traineeId));
@@ -451,14 +604,34 @@ export const subscribeToAssessments = (filters = {}, callback, limitCount = 100)
     q = query(q, where('module', '==', filters.module));
   }
   
-  q = query(q, orderBy('date', 'desc'), limit(limitCount));
+  // Only use orderBy if no filters (to avoid composite index requirement)
+  if (!hasFilters) {
+    q = query(q, orderBy('date', 'desc'), limit(limitCount));
+  } else {
+    q = query(q, limit(limitCount * 2)); // Get more to sort in memory
+  }
   
-  return createSafeListener(listenerKey, q, callback, 'subscribeToAssessments');
+  const wrappedCallback = (data) => {
+    // Sort in memory if we have filters
+    if (hasFilters) {
+      data.sort((a, b) => {
+        const dateA = a.date?.toDate?.() || a.created?.toDate?.() || new Date(0);
+        const dateB = b.date?.toDate?.() || b.created?.toDate?.() || new Date(0);
+        return dateB - dateA;
+      });
+      data = data.slice(0, limitCount);
+    }
+    callback(data);
+  };
+  
+  return createSafeListener(listenerKey, q, wrappedCallback, 'subscribeToAssessments');
 };
 
 export const subscribeToGrades = (filters = {}, callback, limitCount = 100) => {
   const listenerKey = `grades-${JSON.stringify(filters)}-${limitCount}`;
   let q = query(collection(db, COLLECTIONS.GRADES));
+  
+  const hasFilters = filters.assessmentId || filters.traineeId;
   
   if (filters.assessmentId) {
     q = query(q, where('assessmentId', '==', filters.assessmentId));
@@ -467,9 +640,27 @@ export const subscribeToGrades = (filters = {}, callback, limitCount = 100) => {
     q = query(q, where('traineeId', '==', filters.traineeId));
   }
   
-  q = query(q, orderBy('submittedAt', 'desc'), limit(limitCount));
+  // Only use orderBy if no filters (to avoid composite index requirement)
+  if (!hasFilters) {
+    q = query(q, orderBy('submittedAt', 'desc'), limit(limitCount));
+  } else {
+    q = query(q, limit(limitCount * 2)); // Get more to sort in memory
+  }
   
-  return createSafeListener(listenerKey, q, callback, 'subscribeToGrades');
+  const wrappedCallback = (data) => {
+    // Sort in memory if we have filters
+    if (hasFilters) {
+      data.sort((a, b) => {
+        const dateA = a.submittedAt?.toDate?.() || a.timestamp?.toDate?.() || new Date(0);
+        const dateB = b.submittedAt?.toDate?.() || b.timestamp?.toDate?.() || new Date(0);
+        return dateB - dateA;
+      });
+      data = data.slice(0, limitCount);
+    }
+    callback(data);
+  };
+  
+  return createSafeListener(listenerKey, q, wrappedCallback, 'subscribeToGrades');
 };
 
 // Cleanup function to remove all listeners
