@@ -2,10 +2,12 @@ import React, { useState } from 'react'
 import { useError } from '../contexts/ErrorContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useRealTimeAssessments } from '../hooks/useRealTimeAssessments'
-import { submitGrade } from '../services/firestore'
+import { submitGrade, getModules } from '../services/firestore'
 import { useModal } from '../hooks/useModal'
 import { SUCCESS_MESSAGES } from '../constants'
 import LoadingSpinner from '../components/LoadingSpinner'
+import GenerateQuestions from '../components/assessments/GenerateQuestions'
+import TakeAssessment from '../components/assessments/TakeAssessment'
 import './Assessments.css'
 
 export default function Assessments() {
@@ -13,9 +15,12 @@ export default function Assessments() {
   const { showError, showSuccess, showErrorFromException } = useError()
   const { assessments, grades, trainees, loading } = useRealTimeAssessments()
   const { isOpen: showGradeModal, open: openGradeModal, close: closeGradeModal, modalRef } = useModal()
+  const { isOpen: showCreateModal, open: openCreateModal, close: closeCreateModal, modalRef: createModalRef } = useModal()
   const [selectedAssessment, setSelectedAssessment] = useState(null)
   const [gradeData, setGradeData] = useState({ traineeId: '', score: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [modules, setModules] = useState([])
+  const [selectedModule, setSelectedModule] = useState(null)
 
   const averageScore = grades.length > 0
     ? grades
@@ -63,6 +68,29 @@ export default function Assessments() {
     return new Date(timestamp).toLocaleDateString()
   }
 
+  React.useEffect(() => {
+    const loadModules = async () => {
+      try {
+        const modulesData = await getModules()
+        setModules(modulesData)
+      } catch (error) {
+        console.error('Error loading modules:', error)
+      }
+    }
+    if (user?.role === 'admin') {
+      loadModules()
+    }
+  }, [user])
+
+  const handleCreateAssessment = () => {
+    openCreateModal()
+  }
+
+  const handleQuestionsGenerated = () => {
+    closeCreateModal()
+    showSuccess('Questions generated successfully!')
+  }
+
   if (loading) {
     return <LoadingSpinner size="large" text="Loading assessments..." />
   }
@@ -72,7 +100,7 @@ export default function Assessments() {
       <div className="assessments-header">
         <h2>Assessments & Grades</h2>
         {user?.role === 'admin' && (
-          <button className="btn-primary">
+          <button className="btn-primary" onClick={handleCreateAssessment}>
             📝 Create Assessment
           </button>
         )}
@@ -140,6 +168,16 @@ export default function Assessments() {
                       >
                         📝 Enter Grade
                       </button>
+                    )}
+                    {user?.role === 'trainee' && !hasGrade && assessment.moduleId && (
+                      <TakeAssessment
+                        assessmentId={assessment.id}
+                        moduleId={assessment.moduleId}
+                        assessmentName={assessment.name}
+                        onComplete={(score, maxScore) => {
+                          showSuccess(`Assessment completed! Score: ${score}/${maxScore}`)
+                        }}
+                      />
                     )}
                     <button className="btn-view" style={{ color: 'var(--green-icon)' }}>
                       👁️ View Details
@@ -222,6 +260,57 @@ export default function Assessments() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showCreateModal && user?.role === 'admin' && (
+        <div 
+          className="modal-overlay" 
+          onClick={closeCreateModal}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-assessment-modal-title"
+        >
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()}
+            ref={createModalRef}
+          >
+            <h3 id="create-assessment-modal-title">Create Assessment from PDF</h3>
+            <div className="form-group" style={{ marginTop: '20px' }}>
+              <label>Select Module</label>
+              <select
+                value={selectedModule?.id || ''}
+                onChange={(e) => {
+                  const module = modules.find(m => m.id === e.target.value)
+                  setSelectedModule(module)
+                }}
+              >
+                <option value="">Select a module</option>
+                {modules.map(module => (
+                  <option key={module.id} value={module.id}>{module.name}</option>
+                ))}
+              </select>
+            </div>
+            {selectedModule && (
+              <div style={{ marginTop: '20px' }}>
+                <GenerateQuestions
+                  moduleId={selectedModule.id}
+                  moduleName={selectedModule.name}
+                  onQuestionsGenerated={handleQuestionsGenerated}
+                />
+              </div>
+            )}
+            <div className="modal-actions" style={{ marginTop: '20px' }}>
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={closeCreateModal}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

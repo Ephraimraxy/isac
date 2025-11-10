@@ -1,141 +1,99 @@
-# 🚀 Quick Start Guide
+# Quick Start Guide - Assessment System
 
-## Installation & Running
+## 🚀 Quick Setup (5 minutes)
 
-1. **Install dependencies** (if not already done):
-   ```bash
-   npm install
-   ```
-
-2. **Start the development server**:
-   ```bash
-   npm run dev
-   ```
-
-3. **Open your browser**:
-   - The app will be available at `http://localhost:5173`
-   - Vite will automatically open it for you
-
-## 🎯 Demo Credentials
-
-### Admin Account
-- **Email**: `admin@training.com`
-- **Password**: `password123`
-- **Access**: Full admin dashboard with all management features
-
-### Trainee Account
-- **Email**: `trainee@training.com`
-- **Password**: `password123`
-- **Access**: Trainee dashboard with progress tracking
-
-## 📱 Features Overview
-
-### ✅ Completed Modules
-
-1. **Authentication** ✓
-   - Login/Signup pages
-   - Role-based access control
-   - Password visibility toggle
-
-2. **Dashboard** ✓
-   - Admin view with stats and quick actions
-   - Trainee view with progress tracking
-
-3. **Module Management** ✓
-   - Create/edit modules
-   - Status tracking
-   - Assignment management
-
-4. **Attendance Tracking** ✓
-   - Date and module filters
-   - Status indicators
-   - Statistics dashboard
-
-5. **Assessments & Grades** ✓
-   - Grade entry forms
-   - Progress charts
-   - Report generation
-
-6. **Messaging** ✓
-   - Inbox system
-   - Message composer
-   - Unread indicators
-
-7. **Settings** ✓
-   - Theme toggle (Light/Dark)
-   - Notification preferences
-   - Integration management
-
-## 🎨 Design Features
-
-- **Theme Toggle**: Click the theme button in sidebar or top-right on login
-- **Color Scheme**: 
-  - 🟠 Orange buttons for primary actions
-  - 🟢 Green icons for status and actions
-- **Responsive**: Works on mobile, tablet, and desktop
-
-## 🛠️ Build for Production
+### 1. Backend Setup
 
 ```bash
-npm run build
+# Navigate to backend directory
+cd backend
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Set Firebase credentials (get from Firebase Console)
+export GOOGLE_APPLICATION_CREDENTIALS="path/to/service-account-key.json"
+
+# Run server
+python main.py
 ```
 
-Output will be in the `dist/` folder.
+Backend will run on `http://localhost:8000`
 
-## 📁 Project Structure
+### 2. Frontend Setup
 
-```
-Bro/
-├── src/
-│   ├── components/        # Reusable components
-│   │   ├── dashboard/     # Dashboard components
-│   │   └── Layout.jsx     # Main layout
-│   ├── contexts/          # React contexts
-│   │   ├── AuthContext.jsx
-│   │   └── ThemeContext.jsx
-│   ├── pages/             # Page components
-│   │   ├── Login.jsx
-│   │   ├── Signup.jsx
-│   │   ├── Dashboard.jsx
-│   │   ├── Modules.jsx
-│   │   ├── Attendance.jsx
-│   │   ├── Assessments.jsx
-│   │   ├── Messaging.jsx
-│   │   └── Settings.jsx
-│   ├── App.jsx            # Main app with routing
-│   ├── main.jsx           # Entry point
-│   └── index.css          # Global styles
-├── index.html
-├── package.json
-├── vite.config.js
-└── README.md
+Add to your `.env` file:
+```env
+VITE_BACKEND_URL=http://localhost:8000
 ```
 
-## 🐛 Troubleshooting
-
-### Port already in use?
-Change the port in `vite.config.js` or use:
+Restart your dev server:
 ```bash
-npm run dev -- --port 3000
+npm run dev
 ```
 
-### Dependencies issues?
-Delete `node_modules` and `package-lock.json`, then:
-```bash
-npm install
-```
+### 3. Test the System
 
-## ✨ Next Steps
+**Admin:**
+1. Go to Assessments page
+2. Click "Create Assessment"
+3. Select a module
+4. Upload a PDF
+5. Click "Generate Questions"
+6. Wait ~30-60 seconds for questions to generate
 
-The application is fully functional with mock data. To connect to a real backend:
+**Trainee:**
+1. Go to Assessments page
+2. Find an assessment
+3. Click "Take Assessment"
+4. Answer questions
+5. Submit and view score
 
-1. Update `AuthContext.jsx` to call your authentication API
-2. Replace mock data in components with API calls
-3. Add state management (Redux/Zustand) if needed
-4. Implement real-time features with WebSockets
-5. Add data persistence with a database
+## 📁 Files Created
 
----
+### Frontend
+- `src/components/assessments/GenerateQuestions.jsx`
+- `src/components/assessments/GenerateQuestions.css`
+- `src/components/assessments/TakeAssessment.jsx`
+- `src/components/assessments/TakeAssessment.css`
+- `src/pages/Assessments.jsx` (updated)
+- `src/firebase/config.js` (updated - added Storage)
 
-**Enjoy your Training Management System! 🎓**
+### Backend
+- `backend/main.py`
+- `backend/requirements.txt`
+- `backend/README.md`
 
+### Documentation
+- `ASSESSMENT_SYSTEM_SETUP.md` - Complete setup guide
+- `IMPLEMENTATION_SUMMARY.md` - Implementation details
+- `QUICK_START.md` - This file
+
+## ⚠️ Important Notes
+
+1. **First Run**: Backend will download AI model (~500MB) - takes a few minutes
+2. **PDF Size**: Max 10MB
+3. **Question Generation**: Takes 30-60 seconds per PDF
+4. **Firebase Storage**: Must be enabled in Firebase Console
+5. **Service Account**: Required for backend Firestore access
+
+## 🔧 Troubleshooting
+
+**Backend won't start:**
+- Check Python version (3.8+)
+- Verify all dependencies installed
+- Check Firebase credentials path
+
+**Questions not generating:**
+- Check backend is running
+- Check backend URL in frontend `.env`
+- Check browser console for errors
+
+**PDF upload fails:**
+- Check file size (max 10MB)
+- Check file format (PDF only)
+- Check Firebase Storage rules
+
+## 📚 Full Documentation
+
+See `ASSESSMENT_SYSTEM_SETUP.md` for complete setup instructions.

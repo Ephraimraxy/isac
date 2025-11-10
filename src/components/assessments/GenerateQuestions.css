@@ -1,0 +1,87 @@
+.generate-questions-modal {
+  max-width: 600px;
+}
+
+.modal-subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.generate-questions-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin: 20px 0;
+}
+
+.step-section {
+  padding: 20px;
+  background: var(--card-background);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.step-section h4 {
+  margin: 0 0 15px 0;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.step-description {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 10px 0;
+}
+
+.file-upload-area {
+  margin: 10px 0;
+}
+
+.file-upload-label {
+  display: inline-block;
+  padding: 12px 24px;
+  background: var(--button-secondary);
+  color: var(--text-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px dashed var(--border-color);
+  text-align: center;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.file-upload-label:hover {
+  background: var(--button-secondary-hover);
+  border-color: var(--green-icon);
+}
+
+.file-upload-label:active {
+  transform: scale(0.98);
+}
+
+.progress-bar-container {
+  width: 100%;
+  margin: 10px 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--green-icon);
+  transition: width 0.3s ease;
+}
+
+.success-message {
+  color: var(--green-icon);
+  font-size: 14px;
+  font-weight: 500;
+}
+

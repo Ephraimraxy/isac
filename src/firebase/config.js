@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, setPersistence, inMemoryPersistence, signOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 // Environment variables are loaded from .env file
@@ -36,6 +37,7 @@ const authPersistenceReady = setPersistence(auth, inMemoryPersistence)
   });
 
 const db = getFirestore(app);
+const storage = getStorage(app);
 
-export { app, analytics, auth, db, authPersistenceReady };
+export { app, analytics, auth, db, storage, authPersistenceReady };
 
