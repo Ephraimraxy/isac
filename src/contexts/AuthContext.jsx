@@ -23,8 +23,8 @@ if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
   )
 }
 
-// Helper function to safely get user document with retry logic
-const getUserDocument = async (uid, retries = 3) => {
+// Helper function to safely get user document with timeout and fast retry logic
+const getUserDocument = async (uid, retries = 2, timeout = 3000) => {
   for (let i = 0; i < retries; i++) {
     try {
       // Try to enable network if it's disabled
@@ -34,24 +34,39 @@ const getUserDocument = async (uid, retries = 3) => {
         // Network might already be enabled, ignore error
       }
       
-      const userDoc = await getDoc(doc(db, 'users', uid))
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), timeout)
+      })
+      
+      // Race between the Firestore request and timeout
+      const userDoc = await Promise.race([
+        getDoc(doc(db, 'users', uid)),
+        timeoutPromise
+      ])
+      
       return userDoc
     } catch (error) {
-      console.warn(`Failed to get user document (attempt ${i + 1}/${retries}):`, error.message)
+      // Check if it's a network/offline error or timeout
+      const isNetworkError = error.message.includes('offline') || 
+                            error.message.includes('network') ||
+                            error.message.includes('timeout') ||
+                            error.message.includes('Failed to get') ||
+                            error.code === 'unavailable'
       
-      // If it's the last retry, throw the error
-      if (i === retries - 1) {
+      // If it's a network error or last retry, fail fast
+      if (isNetworkError || i === retries - 1) {
         throw error
       }
       
-      // Wait before retrying (exponential backoff)
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000))
+      // Short wait before retrying (only 500ms for faster failure)
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
   }
 }
 
-// Helper function to safely set user document with retry logic
-const setUserDocument = async (uid, userData, retries = 3) => {
+// Helper function to safely set user document with timeout and fast retry logic
+const setUserDocument = async (uid, userData, retries = 2, timeout = 3000) => {
   for (let i = 0; i < retries; i++) {
     try {
       // Try to enable network if it's disabled
@@ -61,18 +76,33 @@ const setUserDocument = async (uid, userData, retries = 3) => {
         // Network might already be enabled, ignore error
       }
       
-      await setDoc(doc(db, 'users', uid), userData)
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), timeout)
+      })
+      
+      // Race between the Firestore request and timeout
+      await Promise.race([
+        setDoc(doc(db, 'users', uid), userData),
+        timeoutPromise
+      ])
+      
       return
     } catch (error) {
-      console.warn(`Failed to set user document (attempt ${i + 1}/${retries}):`, error.message)
+      // Check if it's a network/offline error or timeout
+      const isNetworkError = error.message.includes('offline') || 
+                            error.message.includes('network') ||
+                            error.message.includes('timeout') ||
+                            error.message.includes('Failed to') ||
+                            error.code === 'unavailable'
       
-      // If it's the last retry, throw the error
-      if (i === retries - 1) {
+      // If it's a network error or last retry, fail fast
+      if (isNetworkError || i === retries - 1) {
         throw error
       }
       
-      // Wait before retrying (exponential backoff)
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000))
+      // Short wait before retrying (only 500ms for faster failure)
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
   }
 }
@@ -164,10 +194,11 @@ export function AuthProvider({ children }) {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       
-      // Immediately fetch and set user data from Firestore
+      // Immediately fetch and set user data from Firestore with fast timeout
       if (userCredential.user) {
         try {
-          const userDoc = await getUserDocument(userCredential.user.uid)
+          // Use shorter timeout for login (2 seconds) to fail fast
+          const userDoc = await getUserDocument(userCredential.user.uid, 1, 2000)
           if (userDoc.exists()) {
             const userData = { 
               uid: userCredential.user.uid,
@@ -187,7 +218,10 @@ export function AuthProvider({ children }) {
               name: isAdmin ? 'Admin' : (userCredential.user.email?.split('@')[0] || 'User'),
               createdAt: serverTimestamp()
             }
-            await setUserDocument(userCredential.user.uid, newUserData)
+            // Try to create document, but don't wait if it fails
+            setUserDocument(userCredential.user.uid, newUserData, 1, 2000).catch(() => {
+              // Silently fail - document will be created later by onAuthStateChanged
+            })
             // Create user data for state (without serverTimestamp placeholder)
             const userData = {
               uid: userCredential.user.uid,
@@ -200,8 +234,7 @@ export function AuthProvider({ children }) {
             setLoading(false)
           }
         } catch (firestoreError) {
-          console.error('Error fetching user document after login:', firestoreError)
-          // If Firestore is unavailable, set user with basic info from auth
+          // If Firestore is unavailable, set user with basic info from auth immediately
           // This allows login to succeed even if Firestore is temporarily unavailable
           const isAdmin = email === ADMIN_EMAIL
           setUser({
@@ -211,6 +244,7 @@ export function AuthProvider({ children }) {
             name: isAdmin ? 'Admin' : (userCredential.user.email?.split('@')[0] || 'User')
           })
           setLoading(false)
+          // Firestore will sync in the background via onAuthStateChanged
         }
       }
       

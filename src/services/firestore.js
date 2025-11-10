@@ -237,10 +237,19 @@ export const subscribeToModules = (callback, limitCount = 100) => {
     orderBy('created', 'desc'),
     limit(limitCount)
   );
-  return onSnapshot(q, (snapshot) => {
-    const modules = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(modules);
-  });
+  return onSnapshot(q, 
+    (snapshot) => {
+      const modules = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(modules);
+    },
+    (error) => {
+      // Silently handle errors - don't spam console
+      // Errors are usually network/permission issues that resolve automatically
+      if (import.meta.env.DEV) {
+        console.warn('Firestore listener error (subscribeToModules):', error.code || error.message);
+      }
+    }
+  );
 };
 
 export const subscribeToAttendance = (filters = {}, callback, limitCount = 100) => {
@@ -258,10 +267,18 @@ export const subscribeToAttendance = (filters = {}, callback, limitCount = 100) 
   
   q = query(q, orderBy('date', 'desc'), limit(limitCount));
   
-  return onSnapshot(q, (snapshot) => {
-    const attendance = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(attendance);
-  });
+  return onSnapshot(q, 
+    (snapshot) => {
+      const attendance = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(attendance);
+    },
+    (error) => {
+      // Silently handle errors - don't spam console
+      if (import.meta.env.DEV) {
+        console.warn('Firestore listener error (subscribeToAttendance):', error.code || error.message);
+      }
+    }
+  );
 };
 
 export const subscribeToMessages = (userId, callback, limitCount = 50) => {
@@ -272,10 +289,18 @@ export const subscribeToMessages = (userId, callback, limitCount = 50) => {
     limit(limitCount)
   );
   
-  return onSnapshot(q, (snapshot) => {
-    const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(messages);
-  });
+  return onSnapshot(q, 
+    (snapshot) => {
+      const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(messages);
+    },
+    (error) => {
+      // Silently handle errors - don't spam console
+      if (import.meta.env.DEV) {
+        console.warn('Firestore listener error (subscribeToMessages):', error.code || error.message);
+      }
+    }
+  );
 };
 
 export const subscribeToAssessments = (filters = {}, callback, limitCount = 100) => {
@@ -290,10 +315,18 @@ export const subscribeToAssessments = (filters = {}, callback, limitCount = 100)
   
   q = query(q, orderBy('date', 'desc'), limit(limitCount));
   
-  return onSnapshot(q, (snapshot) => {
-    const assessments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(assessments);
-  });
+  return onSnapshot(q, 
+    (snapshot) => {
+      const assessments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(assessments);
+    },
+    (error) => {
+      // Silently handle errors - don't spam console
+      if (import.meta.env.DEV) {
+        console.warn('Firestore listener error (subscribeToAssessments):', error.code || error.message);
+      }
+    }
+  );
 };
 
 export const subscribeToGrades = (filters = {}, callback, limitCount = 100) => {
@@ -308,9 +341,17 @@ export const subscribeToGrades = (filters = {}, callback, limitCount = 100) => {
   
   q = query(q, orderBy('submittedAt', 'desc'), limit(limitCount));
   
-  return onSnapshot(q, (snapshot) => {
-    const grades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(grades);
-  });
+  return onSnapshot(q, 
+    (snapshot) => {
+      const grades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(grades);
+    },
+    (error) => {
+      // Silently handle errors - don't spam console
+      if (import.meta.env.DEV) {
+        console.warn('Firestore listener error (subscribeToGrades):', error.code || error.message);
+      }
+    }
+  );
 };
 

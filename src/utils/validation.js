@@ -192,6 +192,29 @@ export const getFirebaseErrorMessage = (error) => {
     'auth/missing-verification-code': 'Verification code is missing. Please try again.',
     'auth/missing-verification-id': 'Verification ID is missing. Please try again.',
     'auth/code-expired': 'Verification code has expired. Please request a new one.',
+    // Firestore/Network errors
+    'unavailable': 'Service temporarily unavailable. Please check your internet connection and try again.',
+    'offline': 'You appear to be offline. Please check your internet connection and try again.',
+    'timeout': 'Request timed out. Please check your internet connection and try again.',
+    'permission-denied': 'Access denied. Please contact support if this problem persists.',
+  }
+
+  // Check for network/offline errors first
+  if (errorMessage.toLowerCase().includes('offline') || 
+      errorMessage.toLowerCase().includes('client is offline') ||
+      errorMessage.toLowerCase().includes('failed to get document because the client is offline')) {
+    return 'You appear to be offline. Please check your internet connection and try again.'
+  }
+  
+  if (errorMessage.toLowerCase().includes('timeout') || 
+      errorMessage.toLowerCase().includes('request timeout')) {
+    return 'Request timed out. Please check your internet connection and try again.'
+  }
+  
+  if (errorMessage.toLowerCase().includes('network') || 
+      errorMessage.toLowerCase().includes('400') ||
+      errorMessage.toLowerCase().includes('bad request')) {
+    return 'Network error. Please check your internet connection and try again.'
   }
 
   // Check for exact error code matches
@@ -208,6 +231,11 @@ export const getFirebaseErrorMessage = (error) => {
     if (errorMappings[code]) {
       return errorMappings[code]
     }
+  }
+
+  // Check for Firestore error codes
+  if (errorMessage.includes('permission-denied') || errorMessage.includes('Permission denied')) {
+    return 'Access denied. Please contact support if this problem persists.'
   }
 
   // If no specific mapping found, return a generic message
