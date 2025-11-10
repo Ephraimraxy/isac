@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { subscribeToModules, subscribeToAttendance, getTrainees } from '../services/firestore'
+import { useAuth } from '../contexts/AuthContext'
 import { useError } from '../contexts/ErrorContext'
 import { MODULE_STATUS } from '../constants'
 
@@ -8,6 +9,7 @@ import { MODULE_STATUS } from '../constants'
  * Calculates stats from real-time data streams
  */
 export function useDashboardStats() {
+  const { user, loading: authLoading } = useAuth()
   const { showErrorFromException } = useError()
   const [stats, setStats] = useState({
     totalTrainees: 0,
@@ -18,6 +20,12 @@ export function useDashboardStats() {
   const [recentActivity, setRecentActivity] = useState([])
 
   useEffect(() => {
+    // Don't subscribe until user is authenticated
+    if (authLoading || !user) {
+      setLoading(true)
+      return
+    }
+
     let modulesUnsubscribe = null
     let attendanceUnsubscribe = null
     let traineesData = []
@@ -96,7 +104,7 @@ export function useDashboardStats() {
       if (modulesUnsubscribe) modulesUnsubscribe()
       if (attendanceUnsubscribe) attendanceUnsubscribe()
     }
-  }, [showErrorFromException])
+  }, [user, authLoading, showErrorFromException])
 
   return {
     stats,

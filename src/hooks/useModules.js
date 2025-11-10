@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { subscribeToModules, createModule } from '../services/firestore'
+import { useAuth } from '../contexts/AuthContext'
 import { useError } from '../contexts/ErrorContext'
 import { validateModule, sanitizeString } from '../utils/validation'
 import { SUCCESS_MESSAGES } from '../constants'
@@ -9,18 +10,25 @@ import { SUCCESS_MESSAGES } from '../constants'
  * Handles loading, creating, and real-time updates
  */
 export function useModules() {
+  const { user, loading: authLoading } = useAuth()
   const { showError, showSuccess, showErrorFromException } = useError()
   const [modules, setModules] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Don't subscribe until user is authenticated
+    if (authLoading || !user) {
+      setLoading(true)
+      return
+    }
+
     const unsubscribe = subscribeToModules((modulesData) => {
       setModules(modulesData)
       setLoading(false)
     })
 
     return () => unsubscribe()
-  }, [])
+  }, [user, authLoading])
 
   const createNewModule = async (moduleData) => {
     // Validate and sanitize input

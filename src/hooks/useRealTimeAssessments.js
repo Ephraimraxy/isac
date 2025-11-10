@@ -16,7 +16,11 @@ export function useRealTimeAssessments() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user?.uid) return
+    // Wait for authentication to complete
+    if (!user?.uid) {
+      setLoading(true)
+      return
+    }
 
     let assessmentsUnsubscribe = null
     let gradesUnsubscribe = null

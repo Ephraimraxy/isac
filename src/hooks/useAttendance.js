@@ -9,15 +9,21 @@ import { SUCCESS_MESSAGES } from '../constants'
  * Handles loading, filtering, and marking attendance
  */
 export function useAttendance(selectedDate, selectedModule) {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { showError, showSuccess, showErrorFromException } = useError()
   const [attendance, setAttendance] = useState([])
   const [modules, setModules] = useState([])
   const [trainees, setTrainees] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Load modules and trainees
+  // Load modules and trainees - wait for authentication
   useEffect(() => {
+    // Don't subscribe until user is authenticated
+    if (authLoading || !user) {
+      setLoading(true)
+      return
+    }
+
     const fetchData = async () => {
       try {
         const traineesData = await getTrainees()
@@ -33,10 +39,16 @@ export function useAttendance(selectedDate, selectedModule) {
     })
 
     return () => unsubscribeModules()
-  }, [showErrorFromException])
+  }, [user, authLoading, showErrorFromException])
 
-  // Load attendance with filters
+  // Load attendance with filters - wait for authentication
   useEffect(() => {
+    // Don't subscribe until user is authenticated
+    if (authLoading || !user) {
+      setLoading(true)
+      return
+    }
+
     const filters = {}
     if (selectedDate) filters.date = selectedDate
     if (selectedModule !== 'all') filters.module = selectedModule
@@ -47,7 +59,7 @@ export function useAttendance(selectedDate, selectedModule) {
     })
 
     return () => unsubscribe()
-  }, [selectedDate, selectedModule])
+  }, [user, authLoading, selectedDate, selectedModule])
 
   const markNewAttendance = async (attendanceData) => {
     try {

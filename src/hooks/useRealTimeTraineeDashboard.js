@@ -9,7 +9,7 @@ import { MODULE_STATUS } from '../constants'
  * Subscribes to modules, assessments, and grades for live updates
  */
 export function useRealTimeTraineeDashboard() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { showErrorFromException } = useError()
   const [progress, setProgress] = useState({
     overall: 0,
@@ -26,7 +26,11 @@ export function useRealTimeTraineeDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user?.uid) return
+    // Wait for authentication to complete
+    if (!user?.uid) {
+      setLoading(true)
+      return
+    }
 
     let modulesUnsubscribe = null
     let assessmentsUnsubscribe = null
@@ -104,7 +108,7 @@ export function useRealTimeTraineeDashboard() {
       if (assessmentsUnsubscribe) assessmentsUnsubscribe()
       if (gradesUnsubscribe) gradesUnsubscribe()
     }
-  }, [user, showErrorFromException])
+  }, [user, authLoading, showErrorFromException])
 
   return {
     progress,

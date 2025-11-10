@@ -8,7 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import './Attendance.css'
 
 export default function Attendance() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { showError, showSuccess, showErrorFromException } = useError()
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedModule, setSelectedModule] = useState('all')
@@ -21,6 +21,12 @@ export default function Attendance() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
+    // Don't subscribe until user is authenticated
+    if (authLoading || !user) {
+      setLoading(true)
+      return
+    }
+
     const fetchData = async () => {
       try {
         const traineesData = await getTrainees()
@@ -36,9 +42,15 @@ export default function Attendance() {
     })
 
     return () => unsubscribeModules()
-  }, [showErrorFromException])
+  }, [user, authLoading, showErrorFromException])
 
   useEffect(() => {
+    // Don't subscribe until user is authenticated
+    if (authLoading || !user) {
+      setLoading(true)
+      return
+    }
+
     const filters = {}
     if (selectedDate) filters.date = selectedDate
     if (selectedModule !== 'all') filters.module = selectedModule
@@ -49,7 +61,7 @@ export default function Attendance() {
     })
 
     return () => unsubscribe()
-  }, [selectedDate, selectedModule, showErrorFromException])
+  }, [user, authLoading, selectedDate, selectedModule, showErrorFromException])
 
   const handleMarkAttendance = async (e) => {
     e.preventDefault()

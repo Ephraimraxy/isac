@@ -7,7 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import './Messaging.css'
 
 export default function Messaging() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { showError, showSuccess, showErrorFromException } = useError()
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
@@ -18,7 +18,11 @@ export default function Messaging() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    if (!user?.uid) return
+    // Wait for authentication to complete
+    if (authLoading || !user?.uid) {
+      setLoading(true)
+      return
+    }
 
     const fetchTrainees = async () => {
       try {
@@ -37,7 +41,7 @@ export default function Messaging() {
     })
 
     return () => unsubscribe()
-  }, [user, showErrorFromException])
+  }, [user, authLoading, showErrorFromException])
 
   const handleSendMessage = async (e) => {
     e.preventDefault()
