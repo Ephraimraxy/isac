@@ -27,7 +27,7 @@ export function useRealTimeTraineeDashboard() {
 
   useEffect(() => {
     // Wait for authentication to complete
-    if (!user?.uid) {
+    if (authLoading || !user?.uid) {
       setLoading(true)
       return
     }

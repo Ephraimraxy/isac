@@ -11,7 +11,7 @@ import TakeAssessment from '../components/assessments/TakeAssessment'
 import './Assessments.css'
 
 export default function Assessments() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { showError, showSuccess, showErrorFromException } = useError()
   const { assessments, grades, trainees, loading } = useRealTimeAssessments()
   const { isOpen: showGradeModal, open: openGradeModal, close: closeGradeModal, modalRef } = useModal()
@@ -69,6 +69,9 @@ export default function Assessments() {
   }
 
   React.useEffect(() => {
+    // Wait for authentication before loading modules
+    if (!user || authLoading) return
+    
     const loadModules = async () => {
       try {
         const modulesData = await getModules()
@@ -80,7 +83,7 @@ export default function Assessments() {
     if (user?.role === 'admin') {
       loadModules()
     }
-  }, [user])
+  }, [user, authLoading])
 
   const handleCreateAssessment = () => {
     openCreateModal()

@@ -10,7 +10,7 @@ import './TakeAssessment.css'
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
 export default function TakeAssessment({ assessmentId, moduleId, assessmentName, onComplete }) {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { showError, showSuccess } = useError()
   const { isOpen: showModal, open: openModal, close: closeModal, modalRef } = useModal()
   const [questions, setQuestions] = useState([])
@@ -20,12 +20,20 @@ export default function TakeAssessment({ assessmentId, moduleId, assessmentName,
   const [score, setScore] = useState(null)
 
   useEffect(() => {
-    if (showModal && moduleId) {
+    // Only load questions if user is authenticated and modal is open
+    if (showModal && moduleId && !authLoading && user?.uid) {
       loadQuestions()
     }
-  }, [showModal, moduleId])
+  }, [showModal, moduleId, user, authLoading])
 
   const loadQuestions = async () => {
+    // Double check authentication before loading
+    if (!user?.uid || authLoading) {
+      showError('Please log in to take assessments.')
+      closeModal()
+      return
+    }
+
     setLoading(true)
     try {
       if (!moduleId) {
@@ -154,6 +162,12 @@ export default function TakeAssessment({ assessmentId, moduleId, assessmentName,
       }
 
       // Save score to Firestore with error handling
+      // Ensure user is authenticated before saving
+      if (!user?.uid) {
+        showError('You must be logged in to save your assessment.')
+        return
+      }
+
       try {
         const assessmentResultRef = doc(db, 'users', user.uid, 'assessments', moduleId)
         await setDoc(assessmentResultRef, {

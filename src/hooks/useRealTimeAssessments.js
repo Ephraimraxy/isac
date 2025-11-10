@@ -8,7 +8,7 @@ import { useError } from '../contexts/ErrorContext'
  * Subscribes to assessments and grades collections for live updates
  */
 export function useRealTimeAssessments() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { showErrorFromException } = useError()
   const [assessments, setAssessments] = useState([])
   const [grades, setGrades] = useState([])
@@ -17,7 +17,7 @@ export function useRealTimeAssessments() {
 
   useEffect(() => {
     // Wait for authentication to complete
-    if (!user?.uid) {
+    if (authLoading || !user?.uid) {
       setLoading(true)
       return
     }
@@ -58,7 +58,7 @@ export function useRealTimeAssessments() {
       if (assessmentsUnsubscribe) assessmentsUnsubscribe()
       if (gradesUnsubscribe) gradesUnsubscribe()
     }
-  }, [user, showErrorFromException])
+  }, [user, authLoading, showErrorFromException])
 
   return {
     assessments,

@@ -11,6 +11,7 @@ import './GenerateQuestions.css'
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
 export default function GenerateQuestions({ moduleId, moduleName, onQuestionsGenerated }) {
+  const { user, loading: authLoading } = useAuth()
   const { showError, showSuccess } = useError()
   const { isOpen: showModal, open: openModal, close: closeModal, modalRef } = useModal()
   const [pdfFile, setPdfFile] = useState(null)
@@ -35,6 +36,12 @@ export default function GenerateQuestions({ moduleId, moduleName, onQuestionsGen
   }
 
   const handleUploadPDF = async () => {
+    // Check authentication before uploading
+    if (authLoading || !user?.uid) {
+      showError('You must be logged in to upload files.')
+      return
+    }
+
     if (!pdfFile || !moduleId) {
       showError('Please select a PDF file')
       return
@@ -89,6 +96,12 @@ export default function GenerateQuestions({ moduleId, moduleName, onQuestionsGen
   }
 
   const handleGenerateQuestions = async () => {
+    // Check authentication before generating
+    if (authLoading || !user?.uid) {
+      showError('You must be logged in to generate questions.')
+      return
+    }
+
     if (!pdfUrl || !moduleId) {
       showError('Please upload a PDF first')
       return
